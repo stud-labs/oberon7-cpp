@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * https://people.inf.ethz.ch/wirth/Oberon/Oberon07.Report.pdf
 */
 
-grammar oberon;
+grammar oberon7;
 
 ident
    : IDENT
@@ -269,7 +269,10 @@ procedureBody
    ;
 
 declarationSequence
-   : (CONST (constDeclaration ';')*)? (TYPE (typeDeclaration ';')*)? (VAR (variableDeclaration ';')*)? (procedureDeclaration ';')*
+   : (CONST (constDeclaration ';')*)? 
+     (TYPE (typeDeclaration ';')*)? 
+     (VAR (variableDeclaration ';')*)? 
+     (procedureDeclaration ';')*
    ;
 
 formalParameters
