@@ -26,3 +26,6 @@ clean:
 
 mrproper: clean
 	rm -f $(TARGET) $(PARSERSRCCPP) *.tokens *.interp
+
+test: $(TARGET)
+	./$(TARGET) test-data/fibonacci.oberon

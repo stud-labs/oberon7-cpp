@@ -203,8 +203,12 @@ actualParameters
    ;
 
 statement
-   : (assignment | procedureCall | ifStatement | caseStatement | whileStatement | repeatStatement | forStatement)?
+   : (assignment | procedureCall | ifStatement | caseStatement | whileStatement | repeatStatement | forStatement | returnStatement )?
    ;
+
+returnStatement
+    : RETURN expression
+    ;
 
 assignment
    : designator ':=' expression
@@ -265,15 +269,22 @@ procedureHeading
    ;
 
 procedureBody
-   : declarationSequence (BEGIN statementSequence)? (RETURN expression)? END
+   : declarationSequence (BEGIN statementSequence)? END
    ;
 
 declarationSequence
-   : (CONST (constDeclaration ';')*)? 
-     (TYPE (typeDeclaration ';')*)? 
-     (VAR (variableDeclaration ';')*)? 
-     (procedureDeclaration ';')*
-   ;
+    :
+        declaration*
+    ;
+
+declaration
+    :
+        CONST (constDeclaration ';')*
+    |   TYPE (typeDeclaration ';')*
+    |   VAR (variableDeclaration ';')
+    |   procedureDeclaration ';'
+    ;
+
 
 formalParameters
    : '(' (fPSection (';' fPSection)*)? ')' (':' qualident)?
