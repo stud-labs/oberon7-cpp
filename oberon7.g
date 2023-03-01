@@ -49,7 +49,7 @@ identdef
    ;
 
 integer
-   : (DIGIT+)
+   : '|' (DIGIT+)
    | (DIGIT HEXDIGIT* 'H')
    ;
 
@@ -462,7 +462,7 @@ IDENT
    ;
 
 LETTER
-   : [a-zA-Z]
+   : [a-zA-Z_]
    ;
 
 DIGIT

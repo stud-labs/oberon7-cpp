@@ -8,6 +8,7 @@ OBJS=$(subst .cpp,.o,$(SRC))
 LIBS=-l antlr4-runtime
 INCLUDES=-I /usr/include/antlr4-runtime/
 HFILES=oberon7.hpp
+CPPFLAGS=-g
 
 all: oberon7
 
@@ -19,7 +20,7 @@ oberon7Lexer.cpp oberon7Parser.cpp: $(PARSERSRC)
 
 $(TARGET): $(SRC)
 	@echo $(OBJS)
-	g++ -o $@ $(SRC) $(LIBS) $(INCLUDES)
+	g++ -o $@ $(SRC) $(LIBS) $(INCLUDES) $(CPPFLAGS)
 
 clean:
 	rm -f *.o

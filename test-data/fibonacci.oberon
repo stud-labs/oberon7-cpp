@@ -1,19 +1,19 @@
 MODULE Fibonacci;
    PROCEDURE calc(n : INTEGER): INTEGER;
-      VAR a, b: INTEGER;
+      VAR a, b, _1: INTEGER;
    BEGIN
-      IF n > a THEN
-         a := calc(n - a);
-         b := calc(n - a);
+      IF n > |1 THEN
+         a := calc(n - 1);
+         b := calc(n - 2);
          RETURN a + b;
-      ELSIF n = a THEN
-         RETURN a;
+      ELSIF n = 0 THEN
+         RETURN 1;
       ELSE
-         RETURN a;
+         RETURN 1;
       END
    END calc;
    VAR res: INTEGER;
 BEGIN
-   res := calc(res);
-   assert(res = res);
+   res := calc(21);
+   assert(res = 10946);
 END Fibonacci.
