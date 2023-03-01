@@ -50,7 +50,7 @@ identdef
 
 integer
    : (DIGIT+)
-   | (DIGIT HEXDIGIT* 'H')
+   | (DIGIT (HEXDIGIT | DIGIT)* 'H')
    ;
 
 real
@@ -445,12 +445,11 @@ IMPORT
 
 STRING
    : ('"' .*? '"')
-   | (DIGIT HEXDIGIT* 'X')
+   | (DIGIT (HEXDIGIT | DIGIT)* 'X')
    ;
 
 HEXDIGIT
-   : DIGIT
-   | 'A'
+   : 'A'
    | 'B'
    | 'C'
    | 'D'
