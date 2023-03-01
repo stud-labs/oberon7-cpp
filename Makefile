@@ -1,4 +1,4 @@
-.PHONY: all clean mrproper
+.PHONY: all clean mrproper py3
 
 TARGET=oberon7
 
@@ -14,6 +14,9 @@ all: oberon7
 
 oberon7Lexer.cpp oberon7Parser.cpp: $(PARSERSRC)
 	antlr4 -Dlanguage=Cpp $<
+
+py3: $(PARSERSRC)
+	antlr4 -Dlanguage=Python3 $<
 
 %.o: %.cpp
 	g++ -c $< -o $@ $(INCLUDES)

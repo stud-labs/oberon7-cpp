@@ -49,7 +49,7 @@ identdef
    ;
 
 integer
-   : '|' (DIGIT+)
+   : (DIGIT+)
    | (DIGIT HEXDIGIT* 'H')
    ;
 
@@ -208,6 +208,7 @@ statement
 
 returnStatement
     : RETURN expression
+//    : RETURN HEXDIGIT
     ;
 
 assignment

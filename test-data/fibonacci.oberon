@@ -2,7 +2,7 @@ MODULE Fibonacci;
    PROCEDURE calc(n : INTEGER): INTEGER;
       VAR a, b, _1: INTEGER;
    BEGIN
-      IF n > |1 THEN
+      IF n > 1 THEN
          a := calc(n - 1);
          b := calc(n - 2);
          RETURN a + b;
