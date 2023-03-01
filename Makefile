@@ -3,7 +3,7 @@
 TARGET=oberon7
 
 PARSERSRC=oberon7.g
-SRC=main.cpp compiler.cpp oberon7Lexer.cpp oberon7Parser.cpp
+SRC=main.cpp compiler.cpp symbols.cpp oberon7Lexer.cpp oberon7Parser.cpp
 OBJS=$(subst .cpp,.o,$(SRC))
 LIBS=-l antlr4-runtime
 INCLUDES=-I /usr/include/antlr4-runtime/
