@@ -3,13 +3,16 @@
 #include <string>
 #include <memory>
 
+#ifndef __SYMBOLS_H__
+#define __SYMBOLS_H__
+
 using namespace std;
 
 namespace o7c {
 
   class Scope;
 
-  Scope * currentScope = NULL;
+  extern Scope * currentScope;
 
   class Symbol {
   public:
@@ -44,3 +47,6 @@ namespace o7c {
   };
 
 }
+
+
+#endif // __SYMBOLS_H__

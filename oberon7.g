@@ -36,6 +36,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 grammar oberon7;
 
+@header {
+#include "symbols.h"
+}
+
+
 ident
    : IDENT
    ;
@@ -299,9 +304,19 @@ formalType
    : (ARRAY OF)* qualident
    ;
 
-module
-   : MODULE ident ';' importList? declarationSequence (BEGIN statementSequence)? END ident '.' EOF
-   ;
+module returns [o7c::Scope * s]
+    : MODULE mid=ident
+        {
+            $s = new o7c::Scope($mid.text);
+        }
+        ';' importList?
+        declarationSequence (BEGIN statementSequence)?
+        END emid=ident
+        {
+            $emid.text==$mid.text
+        }?
+        '.' EOF
+    ;
 
 importList
    : IMPORT import_ (',' import_)* ';'
