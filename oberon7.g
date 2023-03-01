@@ -39,6 +39,9 @@ grammar oberon7;
 @header {
 #include "symbols.h"
 #include <string>
+
+using namespace std;
+using namespace o7c;
 }
 
 
@@ -116,8 +119,16 @@ fieldList
    : identList ':' type_
    ;
 
-identList
-   : identdef (',' identdef)*
+identList returns [vector<string> ids]
+   : id=identdef
+        {
+            $ids.push_back($id.text);
+        }
+        (',' nid=identdef
+            {
+                $ids.push_back($nid.text);
+            }
+        )*
    ;
 
 pointerType
@@ -128,8 +139,12 @@ procedureType
    : PROCEDURE formalParameters?
    ;
 
-variableDeclaration
-   : identList ':' type_
+variableDeclaration locals [Type * t]
+   : ids=identList ':' type_
+        {
+            $t = NULL;
+            currentScope->addVariables($ids.ids, $t);
+        }
    ;
 
 expression
@@ -317,6 +332,9 @@ module returns [o7c::Scope * s]
             $mid.text == $emid.text
         }?
         '.' EOF
+        {
+            currentScope->printSymbolTable();
+        }
     ;
 
 importList

@@ -44,6 +44,9 @@ namespace o7c {
       // procedure / function name
       : Symbol(m_name, m_scope) { currentScope = this; }
     static void initDefaultTypes();
+    void addVariables(vector<string> &v, Type * t);
+    void addVar(string &v, Type * t);
+    void printSymbolTable();
   };
 
   bool textEqual(char * a, char *b);
