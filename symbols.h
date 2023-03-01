@@ -46,6 +46,7 @@ namespace o7c {
     static void initDefaultTypes();
   };
 
+  bool textEqual(char * a, char *b);
 }
 
 

@@ -38,6 +38,7 @@ grammar oberon7;
 
 @header {
 #include "symbols.h"
+#include <string>
 }
 
 
@@ -313,7 +314,7 @@ module returns [o7c::Scope * s]
         declarationSequence (BEGIN statementSequence)?
         END emid=ident
         {
-            $emid.text==$mid.text
+            $mid.text == $emid.text
         }?
         '.' EOF
     ;
