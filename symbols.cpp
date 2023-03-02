@@ -100,4 +100,11 @@ namespace o7c {
     symbolTable[name] = func; // TODO Hiding prev function
   }
 
+  void Qual::printOn(ostream& os) const {
+    Type::printOn(os);
+    for (auto& a: qual) {
+      os << a << ".";
+    }
+  }
+
 }

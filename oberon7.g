@@ -49,8 +49,16 @@ ident
    : IDENT
    ;
 
-qualident
-   : (ident '.')? ident
+qualident returns [Qual * q] locals [vector<string> qual]
+   : (id=ident
+            {
+                $qual.push_back($id.text);
+            }
+            '.')? nid=ident
+        {
+            $qual.push_back($nid.text);
+            $q = new Qual($qual, currentScope);
+        }
    ;
 
 identdef
@@ -87,24 +95,35 @@ typeDeclaration
    : identdef '=' type_
    ;
 
-type_
-   : qualident
-   | arrayType
-   | recordType
-   | pointerType
-   | procedureType
+type_ returns [Type * type]
+   : q=qualident {$type = $q.q;}
+   | a=arrayType {$type = $a.at;}
+   | r=recordType {$type = $r.rec;}
+   | p=pointerType {$type = $p.pointer;}
+   | c=procedureType {$type = $c.procType;}
    ;
 
-arrayType
-   : ARRAY length (',' length)* OF type_
+arrayType returns [Array * at] locals [vector<int> dims]
+   : ARRAY dp=length
+        {
+            $dims.push_back($dp.l);
+        }
+        (',' ndp=length
+            {
+                $dims.push_back($ndp.l);
+            }
+        )* OF t=type_
+        {
+            $at = new Array($dims, $t.type);
+        }
    ;
 
-length
-   : constExpression
+length returns [int l]
+   : constExpression { $l=100; }
    ;
 
-recordType
-   : RECORD ('(' baseType ')')? fieldListSequence? END
+recordType returns [Record * rec]
+   : RECORD ('(' baseType ')')? fieldListSequence? END { $rec=NULL;}
    ;
 
 baseType
@@ -131,21 +150,19 @@ identList returns [vector<string> ids]
         )*
    ;
 
-pointerType
-   : POINTER TO type_
+pointerType returns [Pointer * pointer]
+   : POINTER TO type_ {$pointer=NULL;}
    ;
 
-procedureType
-   : PROCEDURE formalParameters?
+procedureType returns [ProcType * procType]
+   : PROCEDURE formalParameters? {$procType = NULL;}
    ;
 
-variableDeclaration locals [Type * t]
+variableDeclaration
    : ids=identList ':'
+        t=type_
         {
-            $t = NULL;
-        } type_
-        {
-            currentScope->addVariables($ids.ids, $t)
+            currentScope->addVariables($ids.ids, $t.type)
         }?
    ;
 
@@ -339,14 +356,14 @@ fPSection locals [vector<string> vars]
                 $vars.push_back($nind.text);
             }
         )*
-        ':' formalType
+        ':' type=formalType
         {
-            currentScope->addVariables($vars, NULL, $var.text);
+            currentScope->addVariables($vars, $type.ft, $var.text);
         }
    ;
 
-formalType
-   : (ARRAY OF)* qualident
+formalType returns [Type * ft]
+   : (ARRAY OF)* qual=qualident {$ft=NULL;}
    ;
 
 module returns [o7c::Scope * s]

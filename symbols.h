@@ -90,6 +90,44 @@ namespace o7c {
     virtual const string className() const {return "Params";};
   };
 
+  class Qual: public Type {
+  public:
+    vector<string> qual;
+    Qual(vector<string> m_qual, Scope * m_scope=currentScope)
+      : Type("a_Qual", NULL, m_scope), qual(m_qual) {}
+  private:
+    const string className() const {return "Qual";};
+  protected:
+    void printOn(ostream& os) const override;
+  };
+
+  class Array: public Type {
+  public:
+    vector<int> dims;
+    Type * arrayType;
+    Array(vector<int> m_dims, Type * m_arrayType, Scope * m_scope=currentScope)
+      : Type("an_Array", NULL, m_scope), dims(m_dims), arrayType(m_arrayType) {};
+  };
+
+  class Record: public Type {
+  public:
+    Record(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
+      : Type(m_name, m_type, m_scope) {}; // TODO: Arguments
+  };
+
+  class Pointer: public Type {
+  public:
+    Pointer(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
+      : Type(m_name, m_type, m_scope) {};
+  };
+
+  class ProcType: public Type {
+  public:
+    ProcType(const string m_name, Params * m_params, const Type * m_type=NULL,
+             Scope * m_scope=currentScope)
+      : Type(m_name, m_type) {}; // TODO: argumants
+  };
+
   bool textEqual(char * a, char *b);
 }
 
