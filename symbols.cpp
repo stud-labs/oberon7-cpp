@@ -13,6 +13,36 @@ namespace o7c {
     return sa==sb;
   }
 
+  ostream& operator<<(ostream& os, const Symbol& s) {
+    s.printOn(os);
+    return os;
+  }
+
+  ostream& operator<<(ostream& os, const Symbol * s) {
+    s->printOn(os);
+    return os;
+  }
+
+  void Symbol::printOn(ostream& os) const {
+    os << className() << " '" << name << "'";
+  }
+
+  void Type::printOn(ostream& os) const {
+    Symbol::printOn(os);
+    if (parent) {
+      os << " subtype of " << parent;
+    }
+  }
+
+  void Variable::printOn(ostream& os) const {
+    Symbol::printOn(os);
+    if (type) {
+      os << ": " << type;
+    } else {
+      os << " (no type)";
+    }
+  }
+
   void Scope::addVariables(vector<string> &vars, Type * t) {
     for(auto v: vars) {
       addVar(v, t);
@@ -24,15 +54,19 @@ namespace o7c {
     symbolTable[v] = var;
   }
 
-  void Scope::printSymbolTable() {
-    cout << "Scope:" << name << endl;
+  void Scope::printSymbolTable(ostream& os) const {
+    os << "Scope:" << name << endl;
     for (const auto &kv: symbolTable) {
       string type = "NULL";
       Variable * v = (Variable *) kv.second;
       if (v->type) {
         type = v->type->name;
       }
-      cout << kv.first << "->" << v->name << ':' << type << endl;
+      cout << kv.first << "->" << v << endl;
     }
+  }
+
+  void Scope::printOn(ostream& os) const {
+    printSymbolTable(os);
   }
 }
