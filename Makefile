@@ -7,7 +7,7 @@ SRC=main.cpp compiler.cpp symbols.cpp oberon7Lexer.cpp oberon7Parser.cpp
 OBJS=$(subst .cpp,.o,$(SRC))
 LIBS=-l antlr4-runtime
 INCLUDES=-I /usr/include/antlr4-runtime/
-HFILES=oberon7.hpp
+HFILES=oberon7.hpp symbols.h
 CPPFLAGS=-g
 
 all: oberon7
@@ -20,6 +20,8 @@ py3: $(PARSERSRC)
 
 %.o: %.cpp
 	g++ -c $< -o $@ $(INCLUDES)
+
+symbols.cpp: symbols.h
 
 $(TARGET): $(SRC)
 	@echo $(OBJS)
