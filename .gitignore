@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+oberon7.*
+oberon7*.cpp
+oberon7*.h
+oberon7*.interp
+oberon7*.tokens
+./oberon7
+oberon7
