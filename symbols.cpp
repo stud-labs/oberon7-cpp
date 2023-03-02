@@ -1,5 +1,6 @@
 #include "symbols.h"
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -43,15 +44,27 @@ namespace o7c {
     }
   }
 
-  void Scope::addVariables(vector<string> &vars, Type * t) {
-    for(auto v: vars) {
-      addVar(v, t);
+  void Func::printOn(ostream& os) const {
+    Variable::printOn(os);
+    os << "(";
+    for (auto &v: params->params) {
+      os << v <<", ";
     }
+    os << ")";
+    // TODO: Type of Func
   }
 
-  void Scope::addVar(string &v, Type *t) {
+  bool Scope::addVariables(vector<string> &vars, Type * t) {
+    for(auto v: vars) {
+      if (!addVar(v, t)) return false;
+    }
+    return true;
+  }
+
+  bool Scope::addVar(string &v, Type *t) {
     Variable * var = new Variable(v, t);
     symbolTable[v] = var;
+    return true;
   }
 
   void Scope::printSymbolTable(ostream& os) const {
@@ -69,4 +82,21 @@ namespace o7c {
   void Scope::printOn(ostream& os) const {
     printSymbolTable(os);
   }
+
+  bool Params::addVar(string &v, Type *t) {
+    if (!Scope::addVar(v, t)) {
+      return false;
+    }
+    if (binary_search(params.begin(), params.end(), v)) {
+      return false;  // Repeating variable name
+    } else {
+      params.push_back(v);
+    }
+    return true;
+  }
+
+  void Scope::addFunc(const string name, Func * func) {
+    symbolTable[name] = func; // TODO Hiding prev function
+  }
+
 }

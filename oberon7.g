@@ -140,11 +140,13 @@ procedureType
    ;
 
 variableDeclaration locals [Type * t]
-   : ids=identList ':' type_
+   : ids=identList ':'
         {
             $t = NULL;
-            currentScope->addVariables($ids.ids, $t);
-        }
+        } type_
+        {
+            currentScope->addVariables($ids.ids, $t)
+        }?
    ;
 
 expression
@@ -286,12 +288,26 @@ procedureDeclaration
    : procedureHeading ';' procedureBody ident
    ;
 
-procedureHeading
-   : PROCEDURE identdef formalParameters?
+procedureHeading locals [Params * params]
+   : PROCEDURE pid=identdef
+        {
+            $params = new Params($pid.text, currentScope);
+            currentScope = $params;
+        }
+        formalParameters?
+        {
+            Func * func = new Func($pid.text, $params, NULL);
+            $params->scope->addFunc($pid.text, func);
+            currentScope = new Scope($pid.text, $params);
+        }
    ;
 
 procedureBody
    : declarationSequence (BEGIN statementSequence)? END
+        {
+            currentScope->printSymbolTable();
+            currentScope = currentScope->scope->scope; // TODO Free Scope *
+        }
    ;
 
 declarationSequence
