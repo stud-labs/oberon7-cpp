@@ -54,15 +54,16 @@ namespace o7c {
     // TODO: Type of Func
   }
 
-  bool Scope::addVariables(vector<string> &vars, Type * t) {
+  bool Scope::addVariables(vector<string> &vars, Type * t, string var) {
     for(auto v: vars) {
-      if (!addVar(v, t)) return false;
+      if (!addVar(v, t, var)) return false;
     }
     return true;
   }
 
-  bool Scope::addVar(string &v, Type *t) {
+  bool Scope::addVar(string &v, Type *t, string m_var) {
     Variable * var = new Variable(v, t);
+    if (m_var != "") var->setVar(true);
     symbolTable[v] = var;
     return true;
   }
@@ -83,8 +84,8 @@ namespace o7c {
     printSymbolTable(os);
   }
 
-  bool Params::addVar(string &v, Type *t) {
-    if (!Scope::addVar(v, t)) {
+  bool Params::addVar(string &v, Type *t, string var) {
+    if (!Scope::addVar(v, t, var)) {
       return false;
     }
     if (binary_search(params.begin(), params.end(), v)) {

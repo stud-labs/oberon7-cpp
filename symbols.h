@@ -42,8 +42,11 @@ namespace o7c {
   class Variable: public Symbol {
   public:
     const Type * type;
+    bool var;
     Variable(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
-      : Symbol(m_name, m_scope), type(m_type) {};
+      : Symbol(m_name, m_scope), type(m_type), var(false) {};
+
+    void setVar(bool m_var) {var = m_var; };
 
   protected:
     void printOn(ostream&) const override;
@@ -68,8 +71,8 @@ namespace o7c {
       // procedure / function name
       : Symbol(m_name, m_scope) { currentScope = this; }
     static void initDefaultTypes();
-    bool addVariables(vector<string> &v, Type * t);
-    virtual bool addVar(string &v, Type * t);
+    bool addVariables(vector<string> &v, Type * t, string var = "");
+    virtual bool addVar(string &v, Type * t, string var = "");
     void addFunc(const string name, Func * func);
     void printSymbolTable(ostream& os = cout) const;
   protected:
@@ -82,7 +85,7 @@ namespace o7c {
   public:
     Params(const string m_name, Scope * m_scope = currentScope)
       : Scope(m_name, m_scope) {};
-    bool addVar(string &v, Type * t) override;
+    bool addVar(string &v, Type * t, string var = "") override;
   protected:
     virtual const string className() const {return "Params";};
   };

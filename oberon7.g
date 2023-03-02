@@ -328,8 +328,21 @@ formalParameters
    : '(' (fPSection (';' fPSection)*)? ')' (':' qualident)?
    ;
 
-fPSection
-   : VAR? ident (',' ident)* ':' formalType
+fPSection locals [vector<string> vars]
+   : var=VAR? ind=ident
+        {
+            $vars.push_back($ind.text);
+        }
+        (
+            ',' nind=ident
+            {
+                $vars.push_back($nind.text);
+            }
+        )*
+        ':' formalType
+        {
+            currentScope->addVariables($vars, NULL, $var.text);
+        }
    ;
 
 formalType
