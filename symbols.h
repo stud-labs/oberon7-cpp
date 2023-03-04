@@ -59,8 +59,8 @@ namespace o7c {
       : NamedSymbol(m_name, m_scope) {};
   protected:
     void printOn(ostream&) const override;
-    virtual const string className() const override {return "Type";};
-    virtual ~Type() {};
+    const string className() const override {return "Type";};
+    ~Type() {};
   };
 
   class SubType: public Type {
@@ -71,8 +71,8 @@ namespace o7c {
       : Type(m_name, m_scope), parent(parentType) {};
   protected:
     void printOn(ostream&) const override;
-    virtual const string className() const {return "SubType";};
-    virtual ~SubType() {};
+    const string className() const override {return "SubType";};
+    ~SubType() {};
   };
 
   class QualType: public Type {
@@ -82,7 +82,7 @@ namespace o7c {
       : Type("aQual", m_scope), qual(m_qual) {};
   protected:
     virtual const string className() const override {return "QualType";};
-    // void printOn(ostream&) const override;
+    void printOn(ostream&) const override;
     virtual ~QualType() {delete qual;};
   };
 
@@ -116,7 +116,7 @@ namespace o7c {
     void addFunc(const string name, Func * func);
     void printSymbolTable(ostream& os = cout) const;
   protected:
-    virtual const string className() const override {return "Func";};
+    const string className() const override {return "Func";};
     void printOn(ostream& os) const override;
     virtual ~Scope() {}; // TODO Release Scope elements
   };
@@ -129,7 +129,7 @@ namespace o7c {
       : Scope(m_name, m_scope) {};
     bool addVar(string &v, Type * t, string var = "") override;
   protected:
-    virtual const string className() const {return "Params";};
+    const string className() const override {return "Params";};
   };
 
   class Func: public Variable {
@@ -139,9 +139,9 @@ namespace o7c {
          Scope * m_scope=currentScope)
       : Variable(m_name, m_type, m_scope), params(m_params) {}
   protected:
-    virtual const string className() const override {return "Func";};
+    const string className() const override {return "Func";};
     void printOn(ostream& os) const override;
-    virtual ~Func() {delete params;};
+    ~Func() {delete params;};
   };
 
   class Array: public SubType {
@@ -151,7 +151,7 @@ namespace o7c {
       : SubType("anArray", m_arrayType, m_scope), dims(m_dims) {};
   protected:
     const string className() const override {return "Array";};
-    // void printOn(ostream& os) const override;
+    void printOn(ostream& os) const override;
   };
 
   class Record: public Type {
@@ -173,9 +173,9 @@ namespace o7c {
     Params * params;
     ProcType(const string m_name, Params * m_params, const Type * m_type=NULL,
              Scope * m_scope=currentScope)
-      : SubType(m_name, m_type, m_scope), params(m_params) {}; // TODO: argumants
+      : SubType(m_name, m_type, m_scope), params(m_params) {}; // TODO: arguments
   protected:
-    const string className() const override {return "Func/Proc";};
+    const string className() const override {return "FuncType";};
     ~ProcType() {delete params;};
   };
 

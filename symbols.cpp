@@ -111,8 +111,22 @@ namespace o7c {
 
   void Qual::printOn(ostream& os) const {
     Symbol::printOn(os);
+    os<<" ";
     bool isFirst=true;
     for (auto& a: qual) {
+        std::cout << (isFirst ? isFirst = false, "" : ".") << a;
+    }
+  }
+
+  void QualType::printOn(ostream& os) const {
+    Type::printOn(os);
+    os << qual;
+  }
+
+  void Array::printOn(ostream& os) const {
+    SubType::printOn(os);
+    bool isFirst=true;
+    for (auto& a: dims) {
         std::cout << (isFirst ? isFirst = false, "" : ".") << a;
     }
   }
