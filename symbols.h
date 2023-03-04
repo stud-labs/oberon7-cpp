@@ -13,70 +13,112 @@ namespace o7c {
 
   class Scope;
   class Params;
+  class Func;
 
   extern Scope * currentScope;
 
   class Symbol {
   public:
-    const string name;
     Scope * scope;
-    Symbol(const string m_name, Scope * m_scope = currentScope)
-      : name(m_name), scope(m_scope) {};
+    Symbol(Scope * m_scope = currentScope)
+      : scope(m_scope) {};
     friend ostream& operator<<(ostream& os, const Symbol& sym);
     friend ostream& operator<<(ostream& os, const Symbol * sym);
 
   protected:
     virtual void printOn(ostream&) const;
     virtual const string className() const {return "Symbol";};
+    virtual ~Symbol() {};
   };
 
-  class Type: public Symbol {
+  class NamedSymbol: public Symbol {
+  public:
+    const string name;
+    NamedSymbol(const string m_name, Scope * m_scope = currentScope)
+      : Symbol(m_scope), name(m_name) {};
+
+  protected:
+    void printOn(ostream&) const override;
+    const string className() const override {return "NamedSymbol";};
+  };
+
+  class Qual: public Symbol {
+  public:
+    vector<string> qual;
+    Qual(vector<string> m_qual, Scope * m_scope=currentScope)
+      : Symbol(m_scope), qual(m_qual) {};
+
+  protected:
+    const string className() const override {return "Qual";};
+    void printOn(ostream& os) const override;
+  };
+
+  class Type: public NamedSymbol {
+  public:
+    Type(const string m_name, Scope * m_scope = currentScope)
+      : NamedSymbol(m_name, m_scope) {};
+  protected:
+    void printOn(ostream&) const override;
+    virtual const string className() const override {return "Type";};
+    virtual ~Type() {};
+  };
+
+  class SubType: public Type {
   public:
     const Type * parent;
-    Type(const string m_name, const Type * parentType = NULL,
+    SubType(const string m_name, const Type * parentType = NULL,
          Scope * m_scope = currentScope)
-      : Symbol(m_name, m_scope), parent(parentType) {};
+      : Type(m_name, m_scope), parent(parentType) {};
+  protected:
     void printOn(ostream&) const override;
+    virtual const string className() const {return "SubType";};
+    virtual ~SubType() {};
   };
 
-  class Variable: public Symbol {
+  class QualType: public Type {
+  public:
+    const Qual * qual;
+    QualType(const Qual * m_qual, Scope * m_scope = currentScope)
+      : Type("aQual", m_scope), qual(m_qual) {};
+  protected:
+    virtual const string className() const override {return "QualType";};
+    // void printOn(ostream&) const override;
+    virtual ~QualType() {delete qual;};
+  };
+
+  class Variable: public NamedSymbol {
   public:
     const Type * type;
-    bool var;
     Variable(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
-      : Symbol(m_name, m_scope), type(m_type), var(false) {};
-
-    void setVar(bool m_var) {var = m_var; };
-
+      : NamedSymbol(m_name, m_scope), type(m_type) {};
   protected:
     void printOn(ostream&) const override;
     const string className() const override {return "Variable";};
   };
 
-  class Func: public Variable {
+  class VarVariable: public Variable {
   public:
-    Params * params;
-    Func(const string m_name, Params * m_params, const Type * m_type=NULL,
-         Scope * m_scope=currentScope)
-      : Variable(m_name, m_type, m_scope), params(m_params) {}
+    VarVariable(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
+      : Variable(m_name, m_type, m_scope) {};
   protected:
-    virtual const string className() const {return "Func";};
-    void printOn(ostream& os) const override;
+    const string className() const override {return "VarVariable";};
   };
 
-  class Scope: public Symbol {
+  class Scope: public NamedSymbol {
   public:
     map<string, Symbol *> symbolTable;
     Scope(const string m_name, Scope * m_scope = currentScope) // The scope name defines module /
       // procedure / function name
-      : Symbol(m_name, m_scope) { currentScope = this; }
+      : NamedSymbol(m_name, m_scope) { currentScope = this; }
     static void initDefaultTypes();
     bool addVariables(vector<string> &v, Type * t, string var = "");
     virtual bool addVar(string &v, Type * t, string var = "");
     void addFunc(const string name, Func * func);
     void printSymbolTable(ostream& os = cout) const;
   protected:
+    virtual const string className() const override {return "Func";};
     void printOn(ostream& os) const override;
+    virtual ~Scope() {}; // TODO Release Scope elements
   };
 
   class Params: public Scope {
@@ -90,42 +132,51 @@ namespace o7c {
     virtual const string className() const {return "Params";};
   };
 
-  class Qual: public Type {
+  class Func: public Variable {
   public:
-    vector<string> qual;
-    Qual(vector<string> m_qual, Scope * m_scope=currentScope)
-      : Type("a_Qual", NULL, m_scope), qual(m_qual) {}
-  private:
-    const string className() const {return "Qual";};
+    Params * params;
+    Func(const string m_name, Params * m_params, const Type * m_type=NULL,
+         Scope * m_scope=currentScope)
+      : Variable(m_name, m_type, m_scope), params(m_params) {}
   protected:
+    virtual const string className() const override {return "Func";};
     void printOn(ostream& os) const override;
+    virtual ~Func() {delete params;};
   };
 
-  class Array: public Type {
+  class Array: public SubType {
   public:
     vector<int> dims;
-    Type * arrayType;
     Array(vector<int> m_dims, Type * m_arrayType, Scope * m_scope=currentScope)
-      : Type("an_Array", NULL, m_scope), dims(m_dims), arrayType(m_arrayType) {};
+      : SubType("anArray", m_arrayType, m_scope), dims(m_dims) {};
+  protected:
+    const string className() const override {return "Array";};
+    // void printOn(ostream& os) const override;
   };
 
   class Record: public Type {
   public:
-    Record(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
-      : Type(m_name, m_type, m_scope) {}; // TODO: Arguments
+    Record(const string m_name, Scope * m_scope = currentScope)
+      : Type(m_name, m_scope) {}; // TODO: Arguments
   };
 
-  class Pointer: public Type {
+  class Pointer: public SubType {
   public:
     Pointer(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
-      : Type(m_name, m_type, m_scope) {};
+      : SubType(m_name, m_type, m_scope) {};
+  protected:
+    const string className() const override {return "Pointer";};
   };
 
-  class ProcType: public Type {
+  class ProcType: public SubType {
   public:
+    Params * params;
     ProcType(const string m_name, Params * m_params, const Type * m_type=NULL,
              Scope * m_scope=currentScope)
-      : Type(m_name, m_type) {}; // TODO: argumants
+      : SubType(m_name, m_type, m_scope), params(m_params) {}; // TODO: argumants
+  protected:
+    const string className() const override {return "Func/Proc";};
+    ~ProcType() {delete params;};
   };
 
   bool textEqual(char * a, char *b);

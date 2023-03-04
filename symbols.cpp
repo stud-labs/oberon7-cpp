@@ -25,13 +25,22 @@ namespace o7c {
   }
 
   void Symbol::printOn(ostream& os) const {
-    os << className() << " '" << name << "'";
+    os << className() ;
+  }
+
+  void NamedSymbol::printOn(ostream& os) const {
+    Symbol::printOn(os);
+    os << " '" << name << "'";
   }
 
   void Type::printOn(ostream& os) const {
     Symbol::printOn(os);
+  }
+
+  void SubType::printOn(ostream& os) const {
+    Symbol::printOn(os);
     if (parent) {
-      os << " subtype of " << parent;
+      os << ", a subtype of " << parent;
     }
   }
 
@@ -47,8 +56,9 @@ namespace o7c {
   void Func::printOn(ostream& os) const {
     Variable::printOn(os);
     os << "(";
-    for (auto &v: params->params) {
-      os << v <<", ";
+    bool isFirst=true;
+    for (auto& v: params->params) {
+        std::cout << (isFirst ? isFirst = false, "" : ".") << v;
     }
     os << ")";
     // TODO: Type of Func
@@ -62,8 +72,7 @@ namespace o7c {
   }
 
   bool Scope::addVar(string &v, Type *t, string m_var) {
-    Variable * var = new Variable(v, t);
-    if (m_var != "") var->setVar(true);
+    Variable * var = (m_var != "") ? new VarVariable(v, t) : new Variable(v,t);
     symbolTable[v] = var;
     return true;
   }
@@ -101,9 +110,10 @@ namespace o7c {
   }
 
   void Qual::printOn(ostream& os) const {
-    Type::printOn(os);
+    Symbol::printOn(os);
+    bool isFirst=true;
     for (auto& a: qual) {
-      os << a << ".";
+        std::cout << (isFirst ? isFirst = false, "" : ".") << a;
     }
   }
 

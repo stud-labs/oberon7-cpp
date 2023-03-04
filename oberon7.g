@@ -96,7 +96,7 @@ typeDeclaration
    ;
 
 type_ returns [Type * type]
-   : q=qualident {$type = $q.q;}
+   : q=qualident {$type = new QualType($q.q);}
    | a=arrayType {$type = $a.at;}
    | r=recordType {$type = $r.rec;}
    | p=pointerType {$type = $p.pointer;}

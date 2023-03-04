@@ -10,6 +10,8 @@ INCLUDES=-I /usr/include/antlr4-runtime/
 HFILES=oberon7.hpp symbols.h
 CPPFLAGS=-g
 
+GPP=g++
+
 all: oberon7
 
 oberon7Lexer.cpp oberon7Parser.cpp: $(PARSERSRC)
@@ -19,13 +21,13 @@ py3: $(PARSERSRC)
 	antlr4 -Dlanguage=Python3 $<
 
 %.o: %.cpp
-	g++ -c $< -o $@ $(INCLUDES)
+	$(GPP) -c $< -o $@ $(INCLUDES)
 
 symbols.cpp: symbols.h
 
 $(TARGET): $(SRC)
 	@echo $(OBJS)
-	g++ -o $@ $(SRC) $(LIBS) $(INCLUDES) $(CPPFLAGS)
+	$(GPP) -o $@ $(SRC) $(LIBS) $(INCLUDES) $(CPPFLAGS)
 
 clean:
 	rm -f *.o
