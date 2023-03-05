@@ -38,10 +38,12 @@ grammar oberon7;
 
 @header {
 #include "symbols.h"
+#include "compiler.h"
 #include <string>
 
 using namespace std;
 using namespace o7c;
+
 }
 
 
@@ -370,6 +372,7 @@ formalType returns [Type * ft]
 module returns [o7c::Scope * s]
     : MODULE mid=ident
         {
+            InitializeModule();
             $s = new o7c::Scope($mid.text);
         }
         ';' importList?

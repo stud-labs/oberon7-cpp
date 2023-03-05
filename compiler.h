@@ -10,17 +10,24 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include <memory>
-#include "compiler.h"
+
+#ifndef __COMPILER_H__
+#define __COMPILER_H__
 
 using namespace std;
 
 namespace o7c {
 
-  void InitializeModule() {
-    Context = std::make_unique<llvm::LLVMContext>();
-    Module = std::make_unique<llvm::Module>("OBERON7MODULE", *Context);
-    Builder = std::make_unique<llvm::IRBuilder<>>(*Context);
-  }
+  static std::unique_ptr<llvm::LLVMContext> Context;
+  static std::unique_ptr<llvm::IRBuilder<>> Builder;
+  static std::unique_ptr<llvm::Module> Module;
 
+  void InitializeModule();
 
 }
+
+
+
+
+
+#endif // __COMPILER_H__
