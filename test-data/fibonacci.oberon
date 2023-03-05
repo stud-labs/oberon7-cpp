@@ -1,6 +1,7 @@
 MODULE Fibonacci;
    PROCEDURE calc(n : INTEGER): INTEGER;
       VAR a, b, _: INTEGER;
+      VAR q: ARRAY 10, 20 OF IO.ROOT;
    BEGIN
       IF n > 1 THEN
          a := calc(n - 1);

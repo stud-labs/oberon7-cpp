@@ -126,9 +126,11 @@ namespace o7c {
   void Array::printOn(ostream& os) const {
     SubType::printOn(os);
     bool isFirst=true;
+    os << ", DIMS:(";
     for (auto& a: dims) {
-        std::cout << (isFirst ? isFirst = false, "" : ".") << a;
+        std::cout << (isFirst ? isFirst = false, "" : ", ") << a;
     }
+    os << ")";
   }
 
 }

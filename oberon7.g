@@ -119,7 +119,8 @@ arrayType returns [Array * at] locals [vector<int> dims]
    ;
 
 length returns [int l]
-   : constExpression { $l=100; }
+   : i=integer { $l=atoi($i.text.c_str()); }
+//   : constExpression { $l=100; }
    ;
 
 recordType returns [Record * rec]
