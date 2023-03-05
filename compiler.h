@@ -18,16 +18,12 @@ using namespace std;
 
 namespace o7c {
 
-  static std::unique_ptr<llvm::LLVMContext> Context;
-  static std::unique_ptr<llvm::IRBuilder<>> Builder;
-  static std::unique_ptr<llvm::Module> Module;
+  extern std::unique_ptr<llvm::LLVMContext> Context;
+  extern std::unique_ptr<llvm::IRBuilder<>> Builder;
+  extern std::unique_ptr<llvm::Module> Module;
 
-  void InitializeModule();
+  void InitializeModule(const string moduleName);
 
 }
-
-
-
-
 
 #endif // __COMPILER_H__

@@ -2,6 +2,7 @@
 #include "oberon7Lexer.h"
 #include "oberon7Parser.h"
 #include <antlr4-runtime.h>
+#include "compiler.h"
 
 using namespace std;
 using namespace antlr4;

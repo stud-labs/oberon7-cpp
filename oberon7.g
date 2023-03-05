@@ -369,14 +369,28 @@ formalType returns [Type * ft]
    : (ARRAY OF)* qual=qualident {$ft=NULL;}
    ;
 
-module returns [o7c::Scope * s]
+module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
     : MODULE mid=ident
         {
-            InitializeModule();
+            InitializeModule($mid.text);
             $s = new o7c::Scope($mid.text);
         }
         ';' importList?
-        declarationSequence (BEGIN statementSequence)?
+        declarationSequence
+        (
+            BEGIN
+            {
+                llvm::FunctionType * FT = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(*Context), false);
+                $iniFunc = llvm::Function::Create(
+                    FT,
+                    llvm::Function::ExternalLinkage,
+                    "@INIT@",
+                    *Module
+                );
+            }
+            statementSequence
+        )?
         END emid=ident
         {
             $mid.text == $emid.text
@@ -384,6 +398,12 @@ module returns [o7c::Scope * s]
         '.' EOF
         {
             currentScope->printSymbolTable();
+            cout<< endl << "CODE:\n";
+
+            if ($iniFunc) {
+                $iniFunc->print(llvm::errs());
+                // $iniFunc->eraseFromParent();
+            }
         }
     ;
 
