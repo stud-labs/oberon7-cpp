@@ -388,6 +388,10 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
                     "@INIT@",
                     *Module
                 );
+                llvm::BasicBlock *BB = llvm::BasicBlock::Create(
+                    Module->getContext(),
+                    "entry", $iniFunc);
+                Builder->SetInsertPoint(BB);
             }
             statementSequence
         )?
@@ -398,11 +402,15 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
         '.' EOF
         {
             currentScope->printSymbolTable();
-            cout<< endl << "CODE:\n";
 
             if ($iniFunc) {
+                Builder->CreateRet(llvm::UndefValue::get(
+                    llvm::Type::getVoidTy(*Context)));
+                llvm::verifyFunction(*$iniFunc);
+                cout<< endl << "CODE:\n";
                 $iniFunc->print(llvm::errs());
-                // $iniFunc->eraseFromParent();
+                // Free initFunc
+                $iniFunc->eraseFromParent();
             }
         }
     ;
