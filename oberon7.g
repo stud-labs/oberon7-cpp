@@ -250,8 +250,18 @@ statement
    ;
 
 returnStatement
-    : RETURN expression
-//    : RETURN HEXDIGIT
+    : RETURN i=integer
+        {
+            Builder->CreateRet(
+                llvm::ConstantInt::get(
+                    llvm::IntegerType::get(
+                        Module->getContext(), 64),
+                    $i.text,
+                    10
+                )
+            );
+        }
+//    : RETURN expression
     ;
 
 assignment
@@ -305,20 +315,53 @@ forStatement
    ;
 
 procedureDeclaration
-   : procedureHeading ';' procedureBody ident
+   : procedureHeading
+        {
+            // cout << "At heading:" << currentScope->name << " "
+            //      << (void *) currentScope
+            //      << endl;
+        }
+        ';' procedureBody id=ident
+        {
+            // cout << "At end:" << currentScope->name
+            //      << " id:" << $id.text << " "
+            //      << (void *) currentScope
+            //      << endl;
+        }
+        {
+            currentScope->name == $id.text
+        }?
+        {
+            currentScope = currentScope->scope; // TODO: delete prev
+        }
    ;
 
-procedureHeading locals [Params * params]
+procedureHeading locals [Params * params, llvm::Function * func = NULL]
    : PROCEDURE pid=identdef
         {
+            cout << "Params: " << $pid.text << endl;
             $params = new Params($pid.text, currentScope);
             currentScope = $params;
         }
         formalParameters?
         {
             Func * func = new Func($pid.text, $params, NULL);
-            $params->scope->addFunc($pid.text, func);
-            currentScope = new Scope($pid.text, $params);
+            $params->scope->addFunc(func->name, func);
+            currentScope = new Scope(func->name, $params);
+            // cout << "init:" << currentScope->name << " pid:" << $pid.text << endl;
+
+            llvm::FunctionType * FT = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(*Context), false
+            );
+            $func = llvm::Function::Create(
+                FT, llvm::Function::ExternalLinkage,
+                $pid.text,
+                *Module);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(
+                Module->getContext(),
+                "entry", $func);
+            Builder->SetInsertPoint(bb);
+            currentScope->setLLVMFunc($func);
         }
    ;
 
@@ -326,7 +369,9 @@ procedureBody
    : declarationSequence (BEGIN statementSequence)? END
         {
             currentScope->printSymbolTable();
-            currentScope = currentScope->scope->scope; // TODO Free Scope *
+            cout<<"\nCODE:\n";
+            currentScope->llvmFunc->print(llvm::errs());
+            currentScope = currentScope->scope; // TODO Free Scope *
         }
    ;
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include "compiler.h"
 
 #ifndef __SYMBOLS_H__
 #define __SYMBOLS_H__
@@ -107,6 +108,7 @@ namespace o7c {
   class Scope: public NamedSymbol {
   public:
     map<string, Symbol *> symbolTable;
+    llvm::Function * llvmFunc = NULL;
     Scope(const string m_name, Scope * m_scope = currentScope) // The scope name defines module /
       // procedure / function name
       : NamedSymbol(m_name, m_scope) { currentScope = this; }
@@ -115,10 +117,12 @@ namespace o7c {
     virtual bool addVar(string &v, Type * t, string var = "");
     void addFunc(const string name, Func * func);
     void printSymbolTable(ostream& os = cout) const;
+    void setLLVMFunc(llvm::Function * m_func) {llvmFunc=m_func;};
+
+    virtual ~Scope() {}; // TODO Release Scope elements
   protected:
     const string className() const override {return "Func";};
     void printOn(ostream& os) const override;
-    virtual ~Scope() {}; // TODO Release Scope elements
   };
 
   class Params: public Scope {
