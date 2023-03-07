@@ -34,6 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * https://people.inf.ethz.ch/wirth/Oberon/Oberon07.Report.pdf
 */
 
+// antlr4
+
 grammar oberon7;
 
 ident
@@ -50,7 +52,7 @@ identdef
 
 integer
    : (DIGIT+)
-   | (DIGIT HEXDIGIT* 'H')
+   | (DIGIT (DIGIT | HEXDIGIT)* 'H')
    ;
 
 real
@@ -203,8 +205,16 @@ actualParameters
    ;
 
 statement
-   : (assignment | procedureCall | ifStatement | caseStatement | whileStatement | repeatStatement | forStatement)?
-   ;
+    : (assignment
+        | procedureCall
+        | ifStatement
+        | caseStatement
+        | whileStatement
+        | repeatStatement
+        | forStatement
+        | returnStatement
+      )?
+    ;
 
 assignment
    : designator ':=' expression
@@ -225,6 +235,10 @@ ifStatement
 caseStatement
    : CASE expression OF case_ ('|' case_)* END
    ;
+
+returnStatement
+    : RETURN expression
+    ;
 
 case_
    : (caseLabelList ':' statementSequence)?
@@ -265,15 +279,19 @@ procedureHeading
    ;
 
 procedureBody
-   : declarationSequence (BEGIN statementSequence)? (RETURN expression)? END
+   : declarationSequence (BEGIN statementSequence)? END
    ;
 
 declarationSequence
-   : (CONST (constDeclaration ';')*)? 
-     (TYPE (typeDeclaration ';')*)? 
-     (VAR (variableDeclaration ';')*)? 
-     (procedureDeclaration ';')*
+   : ( declaration )*
    ;
+
+declaration
+    : CONST (constDeclaration) ';'
+    | TYPE (typeDeclaration) ';'
+    | VAR (variableDeclaration) ';'
+    | procedureDeclaration ';'
+    ;
 
 formalParameters
    : '(' (fPSection (';' fPSection)*)? ')' (':' qualident)?
@@ -288,7 +306,12 @@ formalType
    ;
 
 module
-   : MODULE ident ';' importList? declarationSequence (BEGIN statementSequence)? END ident '.' EOF
+    : MODULE ident ';'
+        importList?
+        declarationSequence
+        (BEGIN statementSequence)?
+        END ident '.'
+        EOF
    ;
 
 importList
@@ -433,12 +456,12 @@ IMPORT
 
 STRING
    : ('"' .*? '"')
-   | (DIGIT HEXDIGIT* 'X')
+   | (DIGIT (DIGIT | HEXDIGIT)* 'X')
    ;
 
 HEXDIGIT
-   : DIGIT
-   | 'A'
+   :
+     'A'
    | 'B'
    | 'C'
    | 'D'
@@ -451,7 +474,7 @@ IDENT
    ;
 
 LETTER
-   : [a-zA-Z]
+   : [a-zA-Z_]
    ;
 
 DIGIT

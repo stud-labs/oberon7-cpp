@@ -1,4 +1,4 @@
-.PHONY: all clean mrproper
+.PHONY: all clean mrproper test
 
 TARGET=oberon7
 
@@ -26,3 +26,6 @@ clean:
 
 mrproper: clean
 	rm -f $(TARGET) $(PARSERSRCCPP) *.tokens *.interp
+
+test: $(TARGET)
+	./$(TARGET) test-data/fibonacci.oberon
