@@ -36,7 +36,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // antlr4
 
+
+
 grammar oberon7;
+
+@header {
+    #include "compiler.h"
+    #include <string>
+}
 
 ident
    : IDENT
@@ -121,8 +128,9 @@ pointerType
    ;
 
 procedureType
-   : PROCEDURE formalParameters?
-   ;
+    : PROCEDURE '(' formalParameters ')' (':' qualident)?
+    | PROCEDURE (':' qualident)?
+    ;
 
 variableDeclaration
    : identList ':' type_
@@ -275,8 +283,9 @@ procedureDeclaration
    ;
 
 procedureHeading
-   : PROCEDURE identdef formalParameters?
-   ;
+    : PROCEDURE identdef '(' formalParameters ')' (':' qualident)?
+    | PROCEDURE identdef (':' qualident)?
+    ;
 
 procedureBody
    : declarationSequence (BEGIN statementSequence)? END
@@ -294,8 +303,9 @@ declaration
     ;
 
 formalParameters
-   : '(' (fPSection (';' fPSection)*)? ')' (':' qualident)?
-   ;
+    : (fPSection (';' fPSection)*)?
+    ;
+
 
 fPSection
    : VAR? ident (',' ident)* ':' formalType
@@ -305,13 +315,20 @@ formalType
    : (ARRAY OF)* qualident
    ;
 
-module
-    : MODULE ident ';'
+module locals [std::string modidbeg]
+    : MODULE modid=ident ';'
+        {
+            o7c::InitializeCompiler($modid.text);
+            $modidbeg = $modid.text;
+        }
         importList?
         declarationSequence
         (BEGIN statementSequence)?
-        END ident '.'
-        EOF
+        END modidend=ident
+        {
+            $modidbeg == $modidend.text
+        }?
+        '.' EOF
    ;
 
 importList
