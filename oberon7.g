@@ -43,6 +43,7 @@ grammar oberon7;
 @header {
     #include "compiler.h"
     #include <string>
+    using namespace o7c;
 }
 
 ident
@@ -283,8 +284,16 @@ procedureDeclaration
    ;
 
 procedureHeading
-    : PROCEDURE identdef '(' formalParameters ')' (':' qualident)?
-    | PROCEDURE identdef (':' qualident)?
+    : PROCEDURE id=identdef '(' formalParameters ')' (':' qualident)?
+    | PROCEDURE id=identdef (':' ty=qualident)?
+        {
+            llvm::Type * ty = llvm::Type::getVoidTy(*Context);
+            llvm::FunctionType *FT =
+                llvm::FunctionType::get(ty, NULL, false);
+            llvm::Function *F =
+                llvm::Function::Create(FT, llvm::Function::ExternalLinkage,
+                                 $id.text, *Module);
+        }
     ;
 
 procedureBody
