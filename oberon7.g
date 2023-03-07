@@ -41,6 +41,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 grammar oberon7;
 
 @header {
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
     #include "compiler.h"
     #include <string>
     using namespace o7c;
@@ -71,9 +83,25 @@ scaleFactor
    : 'E' ('+' | '-')? DIGIT+
    ;
 
-number
-   : integer
-   | real
+number returns [llvm::Value * val]
+   : i=integer
+        {
+            $val = llvm::ConstantInt::get(
+                llvm::IntegerType::get(
+                    Module->getContext(), 64
+                ),
+                $i.text,
+                10
+            );
+        }
+   | f=real
+        {
+            float numVal = strtod($f.text.c_str(), nullptr);
+            $val = llvm::ConstantFP::get(
+                Module->getContext(),
+                llvm::APFloat(numVal)
+            );
+        }
    ;
 
 constDeclaration
@@ -137,8 +165,11 @@ variableDeclaration
    : identList ':' type_
    ;
 
-expression
-   : simpleExpression (relation simpleExpression)?
+expression returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : s=simpleExpression (relation simpleExpression)?
+        {
+            $val = $s.val; // TODO
+        }
    ;
 
 relation
@@ -152,8 +183,11 @@ relation
    | IS
    ;
 
-simpleExpression
-   : ('+' | '-')? term (addOperator term)*
+simpleExpression returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : ('+' | '-')? t=term (addOperator term)*
+        {
+            $val = $t.val; // TODO: ...
+        }
    ;
 
 addOperator
@@ -162,8 +196,11 @@ addOperator
    | OR
    ;
 
-term
-   : factor (mulOperator factor)*
+term returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : f=factor (mulOperator f2=factor)*
+        {
+            $val = $f.val; // TODO: Process operator
+        }
    ;
 
 mulOperator
@@ -174,8 +211,8 @@ mulOperator
    | '&'
    ;
 
-factor
-   : number
+factor returns [llvm::Value * val = NULL]
+   : i=number { $val = $i.val; }
    | STRING
    | NIL
    | TRUE
@@ -246,7 +283,10 @@ caseStatement
    ;
 
 returnStatement
-    : RETURN expression
+    : RETURN e=expression
+        {
+            Builder->CreateRet($e.val);
+        }
     ;
 
 case_
@@ -280,19 +320,31 @@ forStatement
    ;
 
 procedureDeclaration
-   : procedureHeading ';' procedureBody ident
-   ;
-
-procedureHeading
-    : PROCEDURE id=identdef '(' formalParameters ')' (':' qualident)?
-    | PROCEDURE id=identdef (':' ty=qualident)?
+    : head=procedureHeading ';' procedureBody ident
         {
-            llvm::Type * ty = llvm::Type::getVoidTy(*Context);
+            // std::cout << "Function code:" << std::endl;
+            // $head.func->print(llvm::errs());
+        }
+    ;
+
+procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = NULL]
+    : PROCEDURE id=identdef '(' formalParameters ')' (':' ty=qualident)?
+    | PROCEDURE id=identdef (':' ty=qualident
+            {
+                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+            })?
+        {
+            llvm::ArrayRef<llvm::Type *> args;
+            if ($retTy == NULL) {
+                $retTy = llvm::Type::getVoidTy(*Context);
+            };
             llvm::FunctionType *FT =
-                llvm::FunctionType::get(ty, NULL, false);
-            llvm::Function *F =
-                llvm::Function::Create(FT, llvm::Function::ExternalLinkage,
-                                 $id.text, *Module);
+                llvm::FunctionType::get($retTy, args, false);
+            $func = llvm::Function::Create(FT, llvm::Function::ExternalLinkage,
+                                        $id.text, *Module);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(
+                *Context, "entry", $func);
+            Builder->SetInsertPoint(bb);
         }
     ;
 
@@ -338,6 +390,10 @@ module locals [std::string modidbeg]
             $modidbeg == $modidend.text
         }?
         '.' EOF
+        {
+            Module->print(llvm::errs(), nullptr);
+            // Module->eraseFromParent();
+        }
    ;
 
 importList
