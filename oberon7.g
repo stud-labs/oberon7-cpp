@@ -186,7 +186,7 @@ pointerType returns [Pointer * pointer]
 procedureType returns [ProcType * procType = NULL]
     : PROCEDURE '(' formalParameters ')' (':' qualident)?
     | PROCEDURE (':' qualident)?
-   ;
+    ;
 
 variableDeclaration
    : ids=identList ':'
@@ -298,7 +298,7 @@ returnStatement
         {
             Builder->CreateRet($e.val);
         }
-   ;
+    ;
 
 assignment
    : designator ':=' expression
@@ -358,7 +358,7 @@ procedureDeclaration
         {
             currentScope = currentScope->scope; // TODO: delete prev
         }
-   ;
+    ;
 
 procedureHeading returns [llvm::Function * func] locals [Params * params = NULL, llvm::Type * retTy = NULL]
     : PROCEDURE pid=identdef '('
@@ -371,7 +371,7 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
             {
                 $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
             })?
-       {
+        {
             llvm::ArrayRef<llvm::Type *> args;
             if ($retTy == NULL) {
                 $retTy = llvm::Type::getVoidTy(*Context);
@@ -445,11 +445,11 @@ declaration
     |   TYPE (typeDeclaration ';')*
     |   VAR (variableDeclaration ';')*
     |   procedureDeclaration ';'
-   ;
+    ;
 
 formalParameters
     : (fPSection (';' fPSection)*)?
-   ;
+    ;
 
 fPSection locals [vector<string> vars]
    : var=VAR? ind=ident
@@ -482,7 +482,7 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
         declarationSequence
         (
             BEGIN
-            {
+        {
                 llvm::FunctionType * FT = llvm::FunctionType::get(
                     llvm::Type::getVoidTy(*Context), false);
                 $iniFunc = llvm::Function::Create(
@@ -510,10 +510,8 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
                 Builder->CreateRet(llvm::UndefValue::get(
                     llvm::Type::getVoidTy(*Context)));
                 llvm::verifyFunction(*$iniFunc);
-                cout<< endl << "CODE:\n";
-                $iniFunc->print(llvm::errs());
                 // Free initFunc
-                $iniFunc->eraseFromParent();
+                // $iniFunc->eraseFromParent();
             }
             Module->print(llvm::errs(), nullptr);
             // Module->eraseFromParent();

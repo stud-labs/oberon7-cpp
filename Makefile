@@ -11,7 +11,7 @@ HFILES=oberon7.hpp symbols.h
 
  # -O2
 CPPFLAGS=-g \
- -I/usr/include \
+    -I/usr/include \
  -D_GNU_SOURCE \
  -D__STDC_CONSTANT_MACROS \
     -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS \
