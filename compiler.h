@@ -15,15 +15,16 @@
 #ifndef __COMPILER_H__
 #define __COMPILER_H__
 
+using namespace std;
+
 namespace o7c {
 
   extern std::unique_ptr<llvm::LLVMContext> Context;
   extern std::unique_ptr<llvm::IRBuilder<>> Builder;
   extern std::unique_ptr<llvm::Module> Module;
 
-  void InitializeCompiler(const std::string moduleName);
+  void InitializeModule(const string moduleName);
 
 }
-
 
 #endif // __COMPILER_H__

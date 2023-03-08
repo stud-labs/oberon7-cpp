@@ -34,10 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * https://people.inf.ethz.ch/wirth/Oberon/Oberon07.Report.pdf
 */
 
-// antlr4
-
-
-
 grammar oberon7;
 
 @header {
@@ -55,6 +51,8 @@ grammar oberon7;
 #include "llvm/IR/Verifier.h"
     #include "compiler.h"
     #include <string>
+
+using namespace std;
     using namespace o7c;
 }
 
@@ -262,6 +260,13 @@ statement
       )?
     ;
 
+returnStatement
+    : RETURN e=expression
+        {
+            Builder->CreateRet($e.val);
+        }
+   ;
+
 assignment
    : designator ':=' expression
    ;
@@ -281,13 +286,6 @@ ifStatement
 caseStatement
    : CASE expression OF case_ ('|' case_)* END
    ;
-
-returnStatement
-    : RETURN e=expression
-        {
-            Builder->CreateRet($e.val);
-        }
-    ;
 
 case_
    : (caseLabelList ':' statementSequence)?
@@ -320,16 +318,15 @@ forStatement
    ;
 
 procedureDeclaration
-    : head=procedureHeading ';' procedureBody ident
-        {
-            // std::cout << "Function code:" << std::endl;
-            // $head.func->print(llvm::errs());
-        }
+    : head=procedureHeading ';' procedureBody id=ident
     ;
 
 procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = NULL]
-    : PROCEDURE id=identdef '(' formalParameters ')' (':' ty=qualident)?
-    | PROCEDURE id=identdef (':' ty=qualident
+    : PROCEDURE pid=identdef '('
+        {
+            cout << "Params: " << $pid.text << endl;
+        }
+       formalParameters ')' (':' ty=qualident
             {
                 $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
             })?
@@ -338,18 +335,42 @@ procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = NU
             if ($retTy == NULL) {
                 $retTy = llvm::Type::getVoidTy(*Context);
             };
-            llvm::FunctionType *FT =
-                llvm::FunctionType::get($retTy, args, false);
-            $func = llvm::Function::Create(FT, llvm::Function::ExternalLinkage,
-                                        $id.text, *Module);
+
+            llvm::FunctionType * FT = llvm::FunctionType::get($retTy, args, false);
+            $func = llvm::Function::Create(
+                FT, llvm::Function::ExternalLinkage,
+                $pid.text,
+                *Module);
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(
-                *Context, "entry", $func);
+                Module->getContext(),
+                "entry", $func);
             Builder->SetInsertPoint(bb);
         }
-    ;
+    | PROCEDURE
+        pid=identdef
+        (':' ty=qualident
+            {
+                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+            })?
+        {
+            if ($retTy == NULL) {
+                $retTy = llvm::Type::getVoidTy(*Context);
+            };
+
+            llvm::FunctionType *FT =
+                llvm::FunctionType::get($retTy, false);
+            $func = llvm::Function::Create(
+                FT, llvm::Function::ExternalLinkage,
+                $pid.text, *Module);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(
+                Module->getContext(),
+                "entry", $func);
+            Builder->SetInsertPoint(bb);
+        }   ;
 
 procedureBody
    : declarationSequence (BEGIN statementSequence)? END
+        //        llvm::verifyFunction(*$iniFunc);
    ;
 
 declarationSequence
@@ -357,10 +378,11 @@ declarationSequence
    ;
 
 declaration
-    : CONST (constDeclaration) ';'
-    | TYPE (typeDeclaration) ';'
-    | VAR (variableDeclaration) ';'
-    | procedureDeclaration ';'
+    :
+        CONST (constDeclaration ';')*
+    |   TYPE (typeDeclaration ';')*
+    |   VAR (variableDeclaration ';')*
+    |   procedureDeclaration ';'
     ;
 
 formalParameters
@@ -376,21 +398,42 @@ formalType
    : (ARRAY OF)* qualident
    ;
 
-module locals [std::string modidbeg]
-    : MODULE modid=ident ';'
+module locals [llvm::Function * iniFunc = NULL]
+    : MODULE mid=ident
         {
-            o7c::InitializeCompiler($modid.text);
-            $modidbeg = $modid.text;
+            InitializeModule($mid.text);
         }
-        importList?
+        ';' importList?
         declarationSequence
-        (BEGIN statementSequence)?
-        END modidend=ident
+        (
+            BEGIN
         {
-            $modidbeg == $modidend.text
+                llvm::FunctionType * FT = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(*Context), false);
+                $iniFunc = llvm::Function::Create(
+                    FT,
+                    llvm::Function::ExternalLinkage,
+                    "@INIT@",
+                    *Module
+                );
+                llvm::BasicBlock *BB = llvm::BasicBlock::Create(
+                    Module->getContext(),
+                    "entry", $iniFunc);
+                Builder->SetInsertPoint(BB);
+            }
+            statementSequence
+        )?
+        END emid=ident
+        {
+            $mid.text == $emid.text
         }?
         '.' EOF
         {
+            if ($iniFunc) {
+                Builder->CreateRet(llvm::UndefValue::get(
+                    llvm::Type::getVoidTy(*Context)));
+                llvm::verifyFunction(*$iniFunc);
+            }
             Module->print(llvm::errs(), nullptr);
             // Module->eraseFromParent();
         }
