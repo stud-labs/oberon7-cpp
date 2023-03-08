@@ -10,6 +10,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include <memory>
+#include <string>
 
 #ifndef __COMPILER_H__
 #define __COMPILER_H__

@@ -37,15 +37,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 grammar oberon7;
 
 @header {
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include "symbols.h"
-#include "compiler.h"
-#include <string>
+    #include "compiler.h"
+    #include <string>
 
 using namespace std;
-using namespace o7c;
-
+    using namespace o7c;
 }
-
 
 ident
    : IDENT
@@ -69,7 +79,7 @@ identdef
 
 integer
    : (DIGIT+)
-   | (DIGIT (HEXDIGIT | DIGIT)* 'H')
+   | (DIGIT (DIGIT | HEXDIGIT)* 'H')
    ;
 
 real
@@ -80,9 +90,25 @@ scaleFactor
    : 'E' ('+' | '-')? DIGIT+
    ;
 
-number
-   : integer
-   | real
+number returns [llvm::Value * val]
+   : i=integer
+        {
+            $val = llvm::ConstantInt::get(
+                llvm::IntegerType::get(
+                    Module->getContext(), 64
+                ),
+                $i.text,
+                10
+            );
+        }
+   | f=real
+        {
+            float numVal = strtod($f.text.c_str(), nullptr);
+            $val = llvm::ConstantFP::get(
+                Module->getContext(),
+                llvm::APFloat(numVal)
+            );
+        }
    ;
 
 constDeclaration
@@ -157,8 +183,9 @@ pointerType returns [Pointer * pointer]
    : POINTER TO type_ {$pointer=NULL;}
    ;
 
-procedureType returns [ProcType * procType]
-   : PROCEDURE formalParameters? {$procType = NULL;}
+procedureType returns [ProcType * procType = NULL]
+    : PROCEDURE '(' formalParameters ')' (':' qualident)?
+    | PROCEDURE (':' qualident)?
    ;
 
 variableDeclaration
@@ -169,8 +196,11 @@ variableDeclaration
         }?
    ;
 
-expression
-   : simpleExpression (relation simpleExpression)?
+expression returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : s=simpleExpression (relation simpleExpression)?
+        {
+            $val = $s.val; // TODO
+        }
    ;
 
 relation
@@ -184,8 +214,11 @@ relation
    | IS
    ;
 
-simpleExpression
-   : ('+' | '-')? term (addOperator term)*
+simpleExpression returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : ('+' | '-')? t=term (addOperator term)*
+        {
+            $val = $t.val; // TODO: ...
+        }
    ;
 
 addOperator
@@ -194,8 +227,11 @@ addOperator
    | OR
    ;
 
-term
-   : factor (mulOperator factor)*
+term returns [llvm::Value * val = NULL] locals [llvm::Value * val2 = NULL]
+   : f=factor (mulOperator f2=factor)*
+        {
+            $val = $f.val; // TODO: Process operator
+        }
    ;
 
 mulOperator
@@ -206,8 +242,8 @@ mulOperator
    | '&'
    ;
 
-factor
-   : number
+factor returns [llvm::Value * val = NULL]
+   : i=number { $val = $i.val; }
    | STRING
    | NIL
    | TRUE
@@ -246,23 +282,23 @@ actualParameters
    ;
 
 statement
-   : (assignment | procedureCall | ifStatement | caseStatement | whileStatement | repeatStatement | forStatement | returnStatement )?
+    : (assignment
+        | procedureCall
+        | ifStatement
+        | caseStatement
+        | whileStatement
+        | repeatStatement
+        | forStatement
+        | returnStatement
+      )?
    ;
 
 returnStatement
-    : RETURN i=integer
+    : RETURN e=expression
         {
-            Builder->CreateRet(
-                llvm::ConstantInt::get(
-                    llvm::IntegerType::get(
-                        Module->getContext(), 64),
-                    $i.text,
-                    10
-                )
-            );
+            Builder->CreateRet($e.val);
         }
-//    : RETURN expression
-    ;
+   ;
 
 assignment
    : designator ':=' expression
@@ -315,19 +351,7 @@ forStatement
    ;
 
 procedureDeclaration
-   : procedureHeading
-        {
-            // cout << "At heading:" << currentScope->name << " "
-            //      << (void *) currentScope
-            //      << endl;
-        }
-        ';' procedureBody id=ident
-        {
-            // cout << "At end:" << currentScope->name
-            //      << " id:" << $id.text << " "
-            //      << (void *) currentScope
-            //      << endl;
-        }
+   : head=procedureHeading ';' procedureBody id=ident
         {
             currentScope->name == $id.text
         }?
@@ -336,23 +360,29 @@ procedureDeclaration
         }
    ;
 
-procedureHeading locals [Params * params, llvm::Function * func = NULL]
-   : PROCEDURE pid=identdef
+procedureHeading returns [llvm::Function * func] locals [Params * params = NULL, llvm::Type * retTy = NULL]
+    : PROCEDURE pid=identdef '('
         {
             cout << "Params: " << $pid.text << endl;
             $params = new Params($pid.text, currentScope);
             currentScope = $params;
         }
-        formalParameters?
-        {
+       formalParameters ')' (':' ty=qualident
+            {
+                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+            })?
+       {
+            llvm::ArrayRef<llvm::Type *> args;
+            if ($retTy == NULL) {
+                $retTy = llvm::Type::getVoidTy(*Context);
+            };
+
             Func * func = new Func($pid.text, $params, NULL);
             $params->scope->addFunc(func->name, func);
             currentScope = new Scope(func->name, $params);
             // cout << "init:" << currentScope->name << " pid:" << $pid.text << endl;
 
-            llvm::FunctionType * FT = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(*Context), false
-            );
+            llvm::FunctionType * FT = llvm::FunctionType::get($retTy, args, false);
             $func = llvm::Function::Create(
                 FT, llvm::Function::ExternalLinkage,
                 $pid.text,
@@ -363,34 +393,55 @@ procedureHeading locals [Params * params, llvm::Function * func = NULL]
             Builder->SetInsertPoint(bb);
             currentScope->setLLVMFunc($func);
         }
-   ;
+    | PROCEDURE pid=identdef (':' ty=qualident
+            {
+                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+            })?
+        {
+            if ($retTy == NULL) {
+                $retTy = llvm::Type::getVoidTy(*Context);
+            };
+
+            Func * func = new Func($pid.text, $params, NULL);
+            $params->scope->addFunc(func->name, func);
+            currentScope = new Scope(func->name, $params);
+
+            llvm::FunctionType *FT =
+                llvm::FunctionType::get($retTy, false);
+            $func = llvm::Function::Create(
+                FT, llvm::Function::ExternalLinkage,
+                $pid.text, *Module);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(
+                Module->getContext(),
+                "entry", $func);
+            Builder->SetInsertPoint(bb);
+            currentScope->setLLVMFunc($func);
+        }   ;
 
 procedureBody
    : declarationSequence (BEGIN statementSequence)? END
         {
             currentScope->printSymbolTable();
-            cout<<"\nCODE:\n";
-            currentScope->llvmFunc->print(llvm::errs());
+            //cout<<"\nCODE:\n";
+            //currentScope->llvmFunc->print(llvm::errs());
             currentScope = currentScope->scope; // TODO Free Scope *
         }
    ;
 
 declarationSequence
-    :
-        declaration*
-    ;
+   : ( declaration )*
+   ;
 
 declaration
     :
         CONST (constDeclaration ';')*
     |   TYPE (typeDeclaration ';')*
-    |   VAR (variableDeclaration ';')
+    |   VAR (variableDeclaration ';')*
     |   procedureDeclaration ';'
-    ;
-
+   ;
 
 formalParameters
-   : '(' (fPSection (';' fPSection)*)? ')' (':' qualident)?
+    : (fPSection (';' fPSection)*)?
    ;
 
 fPSection locals [vector<string> vars]
@@ -457,8 +508,10 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
                 // Free initFunc
                 $iniFunc->eraseFromParent();
             }
+            Module->print(llvm::errs(), nullptr);
+            // Module->eraseFromParent();
         }
-    ;
+   ;
 
 importList
    : IMPORT import_ (',' import_)* ';'
@@ -602,11 +655,12 @@ IMPORT
 
 STRING
    : ('"' .*? '"')
-   | (DIGIT (HEXDIGIT | DIGIT)* 'X')
+   | (DIGIT (DIGIT | HEXDIGIT)* 'X')
    ;
 
 HEXDIGIT
-   : 'A'
+   :
+     'A'
    | 'B'
    | 'C'
    | 'D'

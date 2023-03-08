@@ -2,16 +2,16 @@ MODULE Fibonacci;
    PROCEDURE calc(n : INTEGER): INTEGER;
       VAR a, b, _: INTEGER;
       VAR q: ARRAY 10, 20 OF IO.ROOT;
-   BEGIN
-      IF n > 1 THEN
+  BEGIN
+    IF n > 1 THEN
          a := calc(n - 1);
          b := calc(n - 2);
          RETURN a + b;
-      ELSIF n = 0 THEN
+    ELSIF n = 0 THEN
+         RETURN 0;
+    ELSE
          RETURN 1;
-      ELSE
-         RETURN 1;
-      END
+    END
    END calc;
    VAR res: INTEGER;
 BEGIN

@@ -1,5 +1,5 @@
 MODULE ret;
-   PROCEDURE calc(n : INTEGER): INTEGER;
+   PROCEDURE calc: INTEGER;
    BEGIN
       RETURN 1;
    END calc;

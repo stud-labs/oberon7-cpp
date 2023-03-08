@@ -1,4 +1,4 @@
-.PHONY: all clean mrproper py3
+.PHONY: all clean mrproper test ret py3
 
 TARGET=oberon7
 
@@ -12,12 +12,15 @@ HFILES=oberon7.hpp symbols.h
 CPPFLAGS=-g -I/usr/include \
  -D_GNU_SOURCE \
  -D__STDC_CONSTANT_MACROS \
- -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS \
+    -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS \
  `llvm-config --ldflags --libs`
  # -std=c++14  # ANTLR braks
  # -fno-exceptions #ANTLR breaks
 
 GPP=g++
+INCLUDES=-I /usr/include/antlr4-runtime/
+HFILES=oberon7.hpp
+TD=test-data
 
 all: oberon7
 
@@ -41,6 +44,10 @@ clean:
 
 mrproper: clean
 	rm -f $(TARGET) $(PARSERSRCCPP) *.tokens *.interp
+	rm -f *.orig $(TD)/*.orig
 
 test: $(TARGET)
-	./$(TARGET) test-data/fibonacci.oberon
+	./$(TARGET) $(TD)/fibonacci.oberon
+
+ret: $(TARGET)
+	./$(TARGET) $(TD)/ret.oberon
