@@ -1,3 +1,17 @@
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+#include <memory>
+#include <string>
+#include "compiler.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -15,6 +29,7 @@ namespace o7c {
   class Scope;
   class Params;
   class Func;
+  class Qual;
 
   extern Scope * currentScope;
 
@@ -30,6 +45,13 @@ namespace o7c {
     virtual void printOn(ostream&) const;
     virtual const string className() const {return "Symbol";};
     virtual ~Symbol() {};
+  public:
+    virtual bool isType() {return false;};
+    virtual bool isVariable() {return false;};
+
+    virtual llvm::Value * llvmValue() const {return (llvm::Value *) nullptr;};
+    virtual llvm::Type * llvmType() const {return (llvm::Type *) nullptr;};
+    virtual llvm::Constant * llvmConst(const string text) const {return (llvm::Constant *) nullptr;};
   };
 
   class NamedSymbol: public Symbol {
@@ -58,6 +80,7 @@ namespace o7c {
   public:
     Type(const string m_name, Scope * m_scope = currentScope)
       : NamedSymbol(m_name, m_scope) {};
+    bool isType() override {return true;};
   protected:
     void printOn(ostream&) const override;
     const string className() const override {return "Type";};
@@ -70,6 +93,8 @@ namespace o7c {
     SubType(const string m_name, const Type * parentType = NULL,
          Scope * m_scope = currentScope)
       : Type(m_name, m_scope), parent(parentType) {};
+
+    llvm::Type * llvmType() const override {return parent->llvmType();};
   protected:
     void printOn(ostream&) const override;
     const string className() const override {return "SubType";};
@@ -78,12 +103,16 @@ namespace o7c {
 
   class QualType: public Type {
   public:
-    const Qual * qual;
-    QualType(const Qual * m_qual, Scope * m_scope = currentScope)
+    Qual * qual;
+    QualType(Qual * m_qual, Scope * m_scope = currentScope)
       : Type("aQual", m_scope), qual(m_qual) {};
+
+    llvm::Type * llvmType() const override ;
+
   protected:
     virtual const string className() const override {return "QualType";};
     void printOn(ostream&) const override;
+  public:
     virtual ~QualType() {delete qual;};
   };
 
@@ -92,6 +121,8 @@ namespace o7c {
     const Type * type;
     Variable(const string m_name, const Type * m_type, Scope * m_scope = currentScope)
       : NamedSymbol(m_name, m_scope), type(m_type) {};
+    llvm::Type * llvmType() const override {return type->llvmType();};
+    bool isVariable() override {return true;};
   protected:
     void printOn(ostream&) const override;
     const string className() const override {return "Variable";};
@@ -113,11 +144,18 @@ namespace o7c {
       // procedure / function name
       : NamedSymbol(m_name, m_scope) { currentScope = this; }
     static void initDefaultTypes();
+
     bool addVariables(vector<string> &v, Type * t, string var = "");
     virtual bool addVar(string &v, Type * t, string var = "");
     void addFunc(const string name, Func * func);
+    bool addType(Type * type);
+
     void printSymbolTable(ostream& os = cout) const;
     void setLLVMFunc(llvm::Function * m_func) {llvmFunc=m_func;};
+    Symbol * findSymbol(const string id);
+    Symbol * findSymbol(Qual * qual);
+    Type * findType(Qual * qual);
+    Variable * findVariable(Qual * qual);
 
     virtual ~Scope() {}; // TODO Release Scope elements
   protected:
@@ -183,7 +221,26 @@ namespace o7c {
     ~ProcType() {delete params;};
   };
 
+
+  class IntegerType: public Type {
+  public:
+    ssize_t numBits;
+    IntegerType(const string m_name, const ssize_t m_numBits, Scope * m_scope = currentScope)
+      : Type(m_name, m_scope), numBits(m_numBits) {}
+    llvm::Type * llvmType() const override {
+      return llvm::Type::getIntNTy(*Context, numBits);
+    };
+    llvm::Constant * llvmConst(const string text) const override {
+      ssize_t radix = 10; // TODO: Figure out radix from text
+      return llvm::ConstantInt::get((llvm::IntegerType *) llvmType(), text, radix);
+    };
+
+  };
+
+
   bool textEqual(char * a, char *b);
+
+  void InitializeDefaultSymbols(Scope * scope);
 }
 
 

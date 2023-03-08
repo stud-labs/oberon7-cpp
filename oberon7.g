@@ -155,8 +155,8 @@ recordType returns [Record * rec]
    : RECORD ('(' baseType ')')? fieldListSequence? END { $rec=NULL;}
    ;
 
-baseType
-   : qualident
+baseType returns [Type * type]
+   : q=qualident {$type = new QualType($q.q);}
    ;
 
 fieldListSequence
@@ -367,9 +367,10 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
             $params = new Params($pid.text, currentScope);
             currentScope = $params;
         }
-       formalParameters ')' (':' ty=qualident
+       formalParameters ')' (':' q=qualident
             {
-                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+                QualType type($q.q);
+                $retTy = type.llvmType(); // TODO Not Implemented
             })?
         {
             llvm::ArrayRef<llvm::Type *> args;
@@ -400,9 +401,10 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
                 $params = new Params($pid.text, currentScope);
                 currentScope = $params;
             }
-        (':' ty=qualident
+        (':' q=qualident
             {
-                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+                QualType type($q.q);
+                $retTy = type.llvmType(); // TODO Not Implemented
             })?
         {
             if ($retTy == NULL) {
@@ -477,6 +479,8 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
         {
             InitializeModule($mid.text);
             $s = new o7c::Scope($mid.text);
+            currentScope = $s;
+            InitializeDefaultSymbols($s);
         }
         ';' importList?
         declarationSequence

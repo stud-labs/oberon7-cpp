@@ -77,13 +77,22 @@ namespace o7c {
     return true;
   }
 
+  bool Scope::addType(Type * type) {
+    if (symbolTable.find(type->name) != symbolTable.end()) {
+      cerr << "Type " << type << " already registered in the scope" << endl;
+      return false;
+    }
+    symbolTable[type->name] = type;
+    return true;
+  }
+
   void Scope::printSymbolTable(ostream& os) const {
     os << "Scope:" << name << endl;
     for (const auto &kv: symbolTable) {
       string type = "NULL";
       Variable * v = (Variable *) kv.second;
       if (v->type) {
-        type = v->type->name;
+        // type = v->type->name;
       }
       cout << kv.first << "->" << v << endl;
     }
@@ -132,5 +141,50 @@ namespace o7c {
     }
     os << ")";
   }
+
+  void InitializeDefaultSymbols(Scope * scope) {
+    scope->addType(new IntegerType("INTEGER", 64, scope));
+  }
+
+  llvm::Type * QualType::llvmType() const {
+    Type * type = scope->findType(qual);
+    if (type) return type->llvmType();
+    cerr << "Type " << qual << " not found " << endl;
+    return nullptr;
+  };
+
+  Symbol * Scope::findSymbol(const string id) {
+    if(symbolTable.find(id) != symbolTable.end()) {
+      return symbolTable[id];
+    } else if (scope == nullptr) {
+      return nullptr;
+    } else {
+      return scope->findSymbol(id);
+    }
+  }
+
+  Symbol * Scope::findSymbol(Qual * qual) {
+    Scope * s = scope;
+    Symbol * y = nullptr;
+    for (auto& q: qual->qual) {
+      y = scope->findSymbol(q);
+      s = (Scope *) y;
+    }
+    return y;
+  };
+
+  Type * Scope::findType(Qual * qual) {
+    Symbol * s=findSymbol(qual);
+    if (s!=nullptr && s->isType()) return (Type *) s;
+    return nullptr;
+  };
+
+
+  Variable * Scope::findVariable(Qual * qual) {
+    Symbol * s=findSymbol(qual);
+    if (s!=nullptr && s->isVariable()) return (Variable *) s;
+    return nullptr;
+  };
+
 
 }
