@@ -8,8 +8,10 @@ OBJS=$(subst .cpp,.o,$(SRC))
 LIBS=-l antlr4-runtime
 INCLUDES=-I /usr/include/antlr4-runtime/
 HFILES=oberon7.hpp symbols.h
-# CPPFLAGS=-g `llvm-config --cxxflags --ldflags --libs`
-CPPFLAGS=-g -I/usr/include \
+
+ # -O2
+CPPFLAGS=-g \
+ -I/usr/include \
  -D_GNU_SOURCE \
  -D__STDC_CONSTANT_MACROS \
     -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS \
