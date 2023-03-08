@@ -378,7 +378,7 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
             };
 
             Func * func = new Func($pid.text, $params, NULL);
-            $params->scope->addFunc(func->name, func);
+            $params->scope->addFunc(func->name, func); // 1
             currentScope = new Scope(func->name, $params);
             // cout << "init:" << currentScope->name << " pid:" << $pid.text << endl;
 
@@ -393,7 +393,14 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
             Builder->SetInsertPoint(bb);
             currentScope->setLLVMFunc($func);
         }
-    | PROCEDURE pid=identdef (':' ty=qualident
+    | PROCEDURE
+        pid=identdef
+            {
+                cout << "Params: " << $pid.text << endl;
+                $params = new Params($pid.text, currentScope);
+                currentScope = $params;
+            }
+        (':' ty=qualident
             {
                 $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
             })?
@@ -403,7 +410,7 @@ procedureHeading returns [llvm::Function * func] locals [Params * params = NULL,
             };
 
             Func * func = new Func($pid.text, $params, NULL);
-            $params->scope->addFunc(func->name, func);
+            $params->scope->addFunc(func->name, func); //2
             currentScope = new Scope(func->name, $params);
 
             llvm::FunctionType *FT =
