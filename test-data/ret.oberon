@@ -1,7 +1,11 @@
 MODULE ret;
    PROCEDURE calc: INTEGER;
    BEGIN
-      RETURN 1;
+      RETURN 42;
    END calc;
+   PROCEDURE calcf: DOUBLE;
+   BEGIN
+      RETURN 55.0;
+   END calcf;
 BEGIN
 END ret.

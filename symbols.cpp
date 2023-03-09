@@ -7,6 +7,7 @@ using namespace std;
 namespace o7c {
 
   Scope * currentScope = NULL;
+  Scope * rootScope = NULL;
 
   bool textEqual(char * a, char *b) {
     string sa(a);
@@ -92,7 +93,7 @@ namespace o7c {
       string type = "NULL";
       Variable * v = (Variable *) kv.second;
       if (v->type) {
-        // type = v->type->name;
+        type = v->type->name;
       }
       cout << kv.first << "->" << v << endl;
     }
@@ -142,10 +143,6 @@ namespace o7c {
     os << ")";
   }
 
-  void InitializeDefaultSymbols(Scope * scope) {
-    scope->addType(new IntegerType("INTEGER", 64, scope));
-  }
-
   llvm::Type * QualType::llvmType() const {
     Type * type = scope->findType(qual);
     if (type) return type->llvmType();
@@ -185,6 +182,14 @@ namespace o7c {
     if (s!=nullptr && s->isVariable()) return (Variable *) s;
     return nullptr;
   };
+
+
+
+  void InitializeDefaultSymbols(Scope * scope) {
+    scope->addType(new IntegerType("INTEGER", 64, scope));
+    scope->addType(new FloatType("DOUBLE", scope));
+  }
+
 
 
 }

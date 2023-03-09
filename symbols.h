@@ -32,6 +32,7 @@ namespace o7c {
   class Qual;
 
   extern Scope * currentScope;
+  extern Scope * rootScope;
 
   class Symbol {
   public:
@@ -234,8 +235,22 @@ namespace o7c {
       ssize_t radix = 10; // TODO: Figure out radix from text
       return llvm::ConstantInt::get((llvm::IntegerType *) llvmType(), text, radix);
     };
-
   };
+
+  class FloatType: public Type {
+  public:
+    FloatType(const string m_name, Scope * m_scope = currentScope)
+      : Type(m_name, m_scope) {}
+    llvm::Type * llvmType() const override {
+      return llvm::Type::getFloatTy(*Context);
+    };
+    llvm::Constant * llvmConst(const string text) const override {
+      float numVal = strtod(text.c_str(), nullptr);
+      return llvm::ConstantFP::get(*Context, llvm::APFloat(numVal));
+    };
+  };
+
+
 
 
   bool textEqual(char * a, char *b);

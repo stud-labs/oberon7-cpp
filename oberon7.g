@@ -93,21 +93,13 @@ scaleFactor
 number returns [llvm::Value * val]
    : i=integer
         {
-            $val = llvm::ConstantInt::get(
-                llvm::IntegerType::get(
-                    Module->getContext(), 64
-                ),
-                $i.text,
-                10
-            );
+            Type * intType = (Type *) rootScope->findSymbol("INTEGER");
+            $val = intType->llvmConst($i.text);
         }
    | f=real
         {
-            float numVal = strtod($f.text.c_str(), nullptr);
-            $val = llvm::ConstantFP::get(
-                Module->getContext(),
-                llvm::APFloat(numVal)
-            );
+            Type * floatType = (Type *) rootScope->findSymbol("DOUBLE");
+            $val = floatType->llvmConst($f.text);
         }
    ;
 
@@ -478,9 +470,11 @@ module returns [o7c::Scope * s] locals [llvm::Function * iniFunc = NULL]
     : MODULE mid=ident
         {
             InitializeModule($mid.text);
-            $s = new o7c::Scope($mid.text);
+            $s = new o7c::Scope("@ROOT@");
+            rootScope = $s;
+            InitializeDefaultSymbols(rootScope);
+            $s = new o7c::Scope($mid.text, $s);
             currentScope = $s;
-            InitializeDefaultSymbols($s);
         }
         ';' importList?
         declarationSequence
