@@ -50,6 +50,7 @@ grammar oberon7;
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
     #include "compiler.h"
+    #include "symbols.h"
     #include <string>
 
 using namespace std;
@@ -60,8 +61,13 @@ ident
    : IDENT
    ;
 
-qualident
-   : (ident '.')? ident
+qualident returns [std::pair<string, string> qual]
+   : (sc=ident '.' {$qual.first = $sc.text;})?
+        id=ident
+        {
+            $qual.second = $id.text;
+            std::cout << "QUAL:" << $qual.first << "." << $qual.second << "\n";
+        }
    ;
 
 identdef
@@ -261,9 +267,16 @@ statement
     ;
 
 returnStatement
-    : RETURN e=expression
+    : RETURN
         {
-            Builder->CreateRet($e.val);
+            currentFunc != nullptr
+        }?
+        e=expression
+        {
+            Type * rt = currentFunc->type;
+            llvm::Value * v = rt->convertFrom($e.val);
+            // llvm::Value * v = Builder->CreateAdd($e.val, Builder->getInt64(1));
+            Builder->CreateRet(v);
         }
    ;
 
@@ -318,21 +331,32 @@ forStatement
    ;
 
 procedureDeclaration
-    : head=procedureHeading ';' procedureBody id=ident
+    : head=procedureHeading ';' procedureBody
+        {
+            currentScope = currentScope->parent;
+        }
+        id=ident
     ;
 
-procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = NULL]
+procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = nullptr, Func * f]
     : PROCEDURE pid=identdef '('
         {
+            Scope * fs = new Scope();
+            $f = new Func($pid.text, nullptr, fs);
+            currentFunc = $f;
+            currentScope = fs;
             cout << "Params: " << $pid.text << endl;
         }
-       formalParameters ')' (':' ty=qualident
+       formalParameters ')' (':' q=qualident
             {
-                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+                Type * ty = (Type *) currentScope->parent->find($q.qual);
+                // TODO: Check whether ty is a type....
+                $retTy = ty->llvmType();
+                $f->setType(ty);
             })?
         {
             llvm::ArrayRef<llvm::Type *> args;
-            if ($retTy == NULL) {
+            if ($retTy == nullptr) {
                 $retTy = llvm::Type::getVoidTy(*Context);
             };
 
@@ -348,9 +372,19 @@ procedureHeading returns [llvm::Function * func] locals [llvm::Type * retTy = NU
         }
     | PROCEDURE
         pid=identdef
-        (':' ty=qualident
+        {
+            Scope * fs = new Scope();
+            $f = new Func($pid.text, nullptr, fs);
+            currentFunc = $f;
+            currentScope = fs;
+            cout << "Params: " << $pid.text << endl;
+        }
+        (':' q=qualident
             {
-                $retTy = llvm::Type::getInt64Ty(*Context); // TODO Not Implemented
+                Type * ty = (Type *) currentScope->parent->find($q.qual);
+                // TODO: Check whether ty is a type....
+                $retTy = ty->llvmType();
+                $f->setType(ty);
             })?
         {
             if ($retTy == NULL) {
@@ -402,6 +436,7 @@ module locals [llvm::Function * iniFunc = NULL]
     : MODULE mid=ident
         {
             InitializeModule($mid.text);
+            InitializeGlobalScope();
         }
         ';' importList?
         declarationSequence

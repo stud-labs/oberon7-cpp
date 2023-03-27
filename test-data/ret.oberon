@@ -4,5 +4,10 @@ MODULE Fibonacci;
    BEGIN
       RETURN 42; (* The Answer *)
    END calc;
+   PROCEDURE calc_float: FLOAT;
+      VAR a, b: FLOAT;
+   BEGIN
+      RETURN 42; (* The Answer *)
+   END calc_float;
 BEGIN
 END Fibonacci.

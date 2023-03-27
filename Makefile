@@ -3,11 +3,12 @@
 TARGET=oberon7
 
 PARSERSRC=oberon7.g
-SRC=main.cpp compiler.cpp oberon7Lexer.cpp oberon7Parser.cpp
+SRC=main.cpp symbols.cpp compiler.cpp oberon7Lexer.cpp oberon7Parser.cpp
 OBJS=$(subst .cpp,.o,$(SRC))
+DEPENDS := $(patsubst %.cpp,%.d,$(SRC))
 LIBS=-l antlr4-runtime
 INCLUDES=-I /usr/include/antlr4-runtime/
-HFILES=oberon7.hpp 
+HFILES=oberon7.hpp
 
  # -O2
 CPPFLAGS=-g \
@@ -24,6 +25,8 @@ INCLUDES=-I /usr/include/antlr4-runtime/
 HFILES=oberon7.hpp
 TD=test-data
 
+-include $(DEPENDS)
+
 all: oberon7
 
 oberon7Lexer.cpp oberon7Parser.cpp: $(PARSERSRC)
@@ -32,14 +35,12 @@ oberon7Lexer.cpp oberon7Parser.cpp: $(PARSERSRC)
 py3: $(PARSERSRC)
 	antlr4 -Dlanguage=Python3 $<
 
-%.o: %.cpp
-	$(GPP) -c $< -o $@ $(INCLUDES)
+%.o : %.cpp Makefile
+	$(GPP) -MMD -MP -c $< -o $@ $(INCLUDES) $(CPPFLAGS)
 
-symbols.cpp: symbols.h
-
-$(TARGET): $(SRC)
-	@echo $(OBJS)
-	$(GPP) -o $@ $(SRC) $(LIBS) $(INCLUDES) $(CPPFLAGS)
+$(TARGET): $(OBJS)
+	# @echo $(OBJS)
+	$(GPP) -o $@ $^ $(LIBS) $(INCLUDES) $(CPPFLAGS)
 
 clean:
 	rm -f *.o
